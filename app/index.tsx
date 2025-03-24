@@ -6,9 +6,18 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/images/react-logo.png')} style={styles.logo} />
-      <Text style={styles.title}>Vitals-Strap</Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/home")}>
+      <Image source={require('../assets/images/cardioNova-logo.png')} style={styles.logo} />
+      <Text style={styles.title}>CARDIO-NOVA</Text>
+      <TouchableOpacity 
+        style={styles.button} 
+        onPress={() => {
+          try {
+            router.push("/home");
+          } catch (error) {
+            console.error("Navigation Error:", error);
+          }
+        }}
+      >
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
     </View>
@@ -24,14 +33,14 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     marginBottom: 250,
   },
   button: {
     width: '100%',
     height: 50,
-    backgroundColor: '#0056b3',
+    backgroundColor: '#ff0000',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -43,9 +52,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 50,
+    width: 280,
+    height: 280,
+    marginBottom: 30,
     marginTop:30,
   },
 });

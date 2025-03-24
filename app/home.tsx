@@ -1,40 +1,52 @@
 import { 
     View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, 
-    KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard
+    KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, Image
   } from "react-native";
   import { useEffect, useState } from "react";
   import { ref, push, onValue } from "firebase/database";
   import { database } from "../firebaseConfig";
   import { Ionicons } from "@expo/vector-icons";
   import BottomNavBar from "../components/BottomNavBar";
+  import { LineChart } from "react-native-chart-kit";
+  import { Dimensions } from "react-native";
+
   
   export default function Home() {
     const [vitals, setVitals] = useState({
       pulseRate: 0,
       bodyTemp: 0,
-      oxygenLevel: 0,
+      
     });
   
     const [modalVisible, setModalVisible] = useState(false);
     const [name, setName] = useState("");
     const [age, setAge] = useState("");
-  
+    const [pulseHistory, setPulseHistory] = useState<number[]>([0]);
+    const [tempHistory, setTempHistory] = useState<number[]>([0]);
+    
+
+    
     useEffect(() => {
       const vitalsRef = ref(database, "vitals");
-  
+    
       const unsubscribe = onValue(vitalsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           setVitals({
             pulseRate: data.pulseRate || 0,
             bodyTemp: data.bodyTemp || data.bodyTemperature || 0,
-            oxygenLevel: data.oxygenLevel || 0,
+            
           });
+    
+          // Append new data to the history arrays
+          setPulseHistory((prev) => [...prev.slice(-9), data.pulseRate || 0]);
+        setTempHistory((prev) => [...prev.slice(-9), data.bodyTemp || 0]);
         }
       });
-  
-      return () => unsubscribe(); // Cleanup listener on unmount
+    
+      return () => unsubscribe();
     }, []);
+    
   
     const saveVitals = () => {
       if (!name || !age) {
@@ -47,7 +59,7 @@ import {
         age,
         pulseRate: vitals.pulseRate,
         bodyTemp: vitals.bodyTemp,
-        oxygenLevel: vitals.oxygenLevel,
+        
         timeRecorded: new Date().toISOString(),
       };
   
@@ -60,9 +72,29 @@ import {
         })
         .catch((error) => alert("Error saving vitals: " + error.message));
     };
+
+    const getHealthLevel = () => {
+        const { pulseRate, bodyTemp } = vitals;
+      
+        if (
+          (pulseRate >= 60 && pulseRate <= 100) &&
+          (bodyTemp >= 36.1 && bodyTemp <= 37.2)
+        ) {
+          return { level: "Healthy", color: "#28a745" }; // Green
+        } else if (
+          (pulseRate >= 50 && pulseRate < 60) || (pulseRate > 100 && pulseRate <= 120) ||
+          (bodyTemp >= 37.3 && bodyTemp <= 38) || (bodyTemp >= 35 && bodyTemp < 36)
+        ) {
+          return { level: "Caution", color: "#ffa502" }; // Yellow
+        } else {
+          return { level: "Critical", color: "#ff4757" }; // Red
+        }
+      };
   
     return (
       <View style={styles.container}>
+        
+        <Image source={require('../assets/images/cardio-banner.png')} style={styles.logo} />
         <Text style={styles.title}>Vitals</Text>
   
         {/* Vitals Cards */}
@@ -74,18 +106,62 @@ import {
               <Text style={styles.cardValue}>{vitals.pulseRate} BPM</Text>
             </View>
   
+            <View style={[styles.card, styles.pulseRateCard]}>
+                
+                <Text style={styles.chartTitle}>Pulse Graph</Text>
+                <View style={styles.chartContainer}>
+                    <LineChart
+                        data={{
+                            labels: pulseHistory.map((_, i) => (i + 1).toString()),
+                            datasets: [{ data: pulseHistory.length ? pulseHistory : [0] }],
+
+                        }}
+                        width={Dimensions.get("window").width * 0.42} // Ensuring dynamic width
+                        height={120} // Slightly increasing height for better visibility
+                        chartConfig={{
+                            backgroundColor: "#fff",
+                            backgroundGradientFrom: "#fff",
+                            backgroundGradientTo: "#fff",
+                            color: (opacity = 1) => `rgba(255, 71, 87, ${opacity})`,
+                            strokeWidth: 2,
+                        }}
+                        bezier
+                        style={styles.chartStyle}
+                    />
+                </View>
+            </View>
+          </View>
+  
+          <View style={styles.row}>
             <View style={[styles.card, styles.bodyTempCard]}>
               <Ionicons name="thermometer" size={30} color="#ffa502" />
               <Text style={styles.cardTitle}>Body Temperature</Text>
               <Text style={styles.cardValue}>{vitals.bodyTemp}°C</Text>
             </View>
-          </View>
-  
-          <View style={styles.centeredRow}>
-            <View style={[styles.card, styles.oxygenLevelCard]}>
-              <Ionicons name="pulse" size={30} color="#1e90ff" />
-              <Text style={styles.cardTitle}>Oxygen Level</Text>
-              <Text style={styles.cardValue}>{vitals.oxygenLevel}%</Text>
+
+            <View style={[styles.card, styles.bodyTempCard]}>
+                
+                <Text style={styles.chartTitle}>Temperature Graph</Text>
+                <View style={styles.chartContainer}>
+                    <LineChart
+                        data={{
+                            labels: tempHistory.map((_, i) => (i + 1).toString()),
+                            datasets: [{ data: tempHistory.length ? tempHistory : [0] }],
+
+                        }}
+                        width={Dimensions.get("window").width * 0.42}
+                        height={120}
+                        chartConfig={{
+                            backgroundColor: "#fff",
+                            backgroundGradientFrom: "#fff",
+                            backgroundGradientTo: "#fff",
+                            color: (opacity = 1) => `rgba(255, 165, 2, ${opacity})`,
+                            strokeWidth: 2,
+                        }}
+                        bezier
+                        style={styles.chartStyle}
+                    />
+                </View>
             </View>
           </View>
         </View>
@@ -128,7 +204,10 @@ import {
 
                     <Text style={styles.modalVitals}>Pulse Rate: {vitals.pulseRate} BPM</Text>
                     <Text style={styles.modalVitals}>Body Temperature: {vitals.bodyTemp}°C</Text>
-                    <Text style={styles.modalVitals}>Oxygen Level: {vitals.oxygenLevel}%</Text>
+                    <Text style={[styles.healthLevel, { color: getHealthLevel().color }]}>
+                        Overall Health: {getHealthLevel().level}
+                    </Text>
+
 
                     <TouchableOpacity style={styles.saveButton} onPress={saveVitals}>
                     <Text style={styles.buttonText}>Save</Text>
@@ -156,7 +235,7 @@ import {
     title: {
       fontSize: 26,
       fontWeight: "bold",
-      marginTop: 60,
+      marginTop: 0,
       marginBottom: 40,
     },
     cardContainer: {
@@ -167,24 +246,32 @@ import {
     row: {
       flexDirection: "row",
       justifyContent: "space-between",
+      marginBottom: 15,
     },
     centeredRow: {
       alignItems: "center",
       marginTop: 15,
     },
-    card: {
-      backgroundColor: "#fff",
-      padding: 20,
-      borderRadius: 10,
-      width: "48%",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-      alignItems: "center",
-      textAlign: "center",
-      height: 140,
+    logo: {
+        width: "80%",
+        height: 35,
+        marginBottom: 20,
+        marginTop:60,
+      },
+      card: {
+        flex: 1,
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        padding: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        marginHorizontal: 5,
+        width: Dimensions.get("window").width * 0.45, // Ensuring proper width
     },
     pulseRateCard: {
       borderBottomWidth: 5,
@@ -194,6 +281,12 @@ import {
       borderBottomWidth: 5,
       borderBottomColor: "#ffa502",
     },
+    healthLevel: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginTop: 10,
+      },
+      
     oxygenLevelCard: {
       width: "48%",
       borderBottomWidth: 5,
@@ -211,10 +304,10 @@ import {
       color: "#333",
     },
     button: {
-      backgroundColor: "#1e90ff",
+      backgroundColor: "#ff0000",
       padding: 15,
       borderRadius: 8,
-      marginTop: 30,
+      marginTop: 25,
       width: "90%",
       alignItems: "center",
     },
@@ -283,6 +376,22 @@ import {
         right: 14,
         zIndex: 10,
       },
-      
+    chartContainer: {
+        width: "100%",
+        alignItems: "center",
+        overflow: "hidden", // Prevents the graph from overflowing
+    },
+    chartStyle: {
+        marginVertical: 8,
+        borderRadius: 10,
+        paddingRight: 5, // Prevents cropping of labels
+    },
+    chartTitle: {
+        fontSize: 18,
+        fontWeight: "600",
+        marginBottom: 5,
+        marginTop:10,
+        textAlign: "center",
+      },
   });
   

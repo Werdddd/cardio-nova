@@ -1,40 +1,77 @@
-import { View, Text, FlatList, StyleSheet } from "react-native";
-import { ref, onValue } from "firebase/database";
+import { View, Text, FlatList, StyleSheet, Image } from "react-native";
+import { ref, onValue, set } from "firebase/database";
 import { useState, useEffect } from "react";
 import { database } from "../firebaseConfig";
 import BottomNavBar from "../components/BottomNavBar";
 
 // Define Type for Records
 type RecordType = {
-  id: string;
-  name: string;
-  age: string;
-  pulseRate: number;
-  bodyTemp: number;
-  oxygenLevel: number;
-  timeRecorded: string;
+    id: string;
+    name: string;
+    age: string;
+    pulseRate: number;
+    bodyTemp: number;
+    overallHealth: string;
+    timeRecorded: string;
 };
 
-export default function Records() {
-  const [records, setRecords] = useState<RecordType[]>([]);
+// Function to determine health status
+const getOverallHealth = (pulseRate: number, bodyTemp: number): string => {
+    if (
+      (pulseRate >= 60 && pulseRate <= 100) && 
+      (bodyTemp >= 36.1 && bodyTemp <= 37.2)
+    ) {
+      return "Healthy";
+    } else if (
+      (pulseRate < 60 || pulseRate > 100) || 
+      (bodyTemp < 36.1 || bodyTemp > 38)
+    ) {
+      return "Concerning";
+    } else {
+      return "Critical";
+    }
+  };
 
-  useEffect(() => {
-    const recordsRef = ref(database, "records");
-
-    onValue(recordsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const recordsArray: RecordType[] = Object.entries(data).map(([id, value]) => {
-          const record = value as RecordType;
-          return record.id ? record : { ...record, id }; // Assign id only if it doesn't exist
-        });
-        setRecords(recordsArray.reverse()); // Show newest first
-      }
-    });
-  }, []);
+  export default function Records() {
+    const [records, setRecords] = useState<RecordType[]>([]);
+  
+    useEffect(() => {
+      const recordsRef = ref(database, "records");
+  
+      onValue(recordsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const recordsArray: RecordType[] = Object.entries(data).map(
+            ([id, value]) => {
+              let record = value as RecordType;
+              // Assign id if missing
+              if (!record.id) record = { ...record, id };
+  
+              // Ensure overallHealth is calculated and stored in Firebase
+              const updatedHealth = getOverallHealth(
+                record.pulseRate,
+                record.bodyTemp
+              );
+  
+              if (record.overallHealth !== updatedHealth) {
+                set(ref(database, `records/${record.id}`), {
+                  ...record,
+                  overallHealth: updatedHealth,
+                });
+              }
+  
+              return { ...record, overallHealth: updatedHealth };
+            }
+          );
+  
+          setRecords(recordsArray.reverse()); // Show newest first
+        }
+      });
+    }, []);
 
   return (
     <View style={styles.container}>
+    <Image source={require('../assets/images/cardio-banner.png')} style={styles.logo} />
       <Text style={styles.title}>Vitals Records</Text>
 
       {/* FlatList now handles scrolling, no need for ScrollView */}
@@ -55,8 +92,21 @@ export default function Records() {
             <Text style={styles.recordText}>
               <Text style={styles.label}>Body Temp:</Text> {item.bodyTemp}°C
             </Text>
-            <Text style={styles.recordText}>
-              <Text style={styles.label}>Oxygen Level:</Text> {item.oxygenLevel}%
+            <Text
+              style={[
+                styles.recordText,
+                {
+                  color:
+                    item.overallHealth === "Healthy"
+                      ? "green"
+                      : item.overallHealth === "Concerning"
+                      ? "orange"
+                      : "red",
+                },
+              ]}
+            >
+              <Text style={styles.label}>Overall Health:</Text>{" "}
+              {item.overallHealth}
             </Text>
             <Text style={styles.recordTime}>
               <Text style={styles.label}>Recorded:</Text>{" "}
@@ -89,7 +139,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
     color: "#333",
-    marginTop: 30,
+    marginTop: 10,
   },
   recordCard: {
     backgroundColor: "#fff",
@@ -101,6 +151,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+  },
+  logo: {
+    width: "80%",
+    height: 35,
+    marginBottom: 20,
+    marginTop:60,
+    alignSelf: "center",
   },
   recordText: {
     fontSize: 16,

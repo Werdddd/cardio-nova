@@ -16,7 +16,7 @@ export default function BottomNavBar() {
         <Ionicons
           name="heart"
           size={24}
-          color={pathname === "/home" ? "#007bff" : "#666"}
+          color={pathname === "/home" ? "#ff0000" : "#666"}
         />
         <Text style={[styles.navText, pathname === "/home" && styles.activeText]}>
           Vitals
@@ -31,7 +31,7 @@ export default function BottomNavBar() {
         <Ionicons
           name="document-text"
           size={24}
-          color={pathname === "/records" ? "#007bff" : "#666"}
+          color={pathname === "/records" ? "#ff0000" : "#666"}
         />
         <Text style={[styles.navText, pathname === "/records" && styles.activeText]}>
           Records
@@ -46,7 +46,7 @@ export default function BottomNavBar() {
         <Ionicons
           name="information-circle"
           size={24}
-          color={pathname === "/about" ? "#007bff" : "#666"}
+          color={pathname === "/about" ? "#ff0000" : "#666"}
         />
         <Text style={[styles.navText, pathname === "/about" && styles.activeText]}>
           About
@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     width: "100%",
+    paddingBottom: 20,
   },
   navItem: {
     alignItems: "center",
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   activeText: {
-    color: "#007bff",
+    color: "#ff0000",
     fontWeight: "bold",
   },
 });
