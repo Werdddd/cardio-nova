@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
 import BottomNavBar from "../components/BottomNavBar";
+import { useRouter } from "expo-router";
 
 export default function About() {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -25,6 +27,19 @@ export default function About() {
           convenient and accessible solution for users seeking proactive
           cardiovascular care.
         </Text>
+
+        <TouchableOpacity 
+                style={styles.button} 
+                onPress={() => {
+                  try {
+                    router.push("/");
+                  } catch (error) {
+                    console.error("Navigation Error:", error);
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>Log Out</Text>
+          </TouchableOpacity>
       </ScrollView>
       <BottomNavBar />
     </View>
@@ -34,10 +49,10 @@ export default function About() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    paddingBottom: 60,
+    backgroundColor: '#f5f5f5',
+    
   },
+  
   scrollContainer: {
     alignItems: "center",
     paddingBottom: 60,
@@ -55,6 +70,22 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     textAlign: 'justify',
     paddingHorizontal: 40,
+  },
+  button: {
+    width: '85%', // Reduce width for better spacing
+    height: 50,
+    backgroundColor: '#ff0000',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    marginHorizontal: 20, // Add horizontal margin for side spacing
+  },
+  
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logo: {
     width: "80%",

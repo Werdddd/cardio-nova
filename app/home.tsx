@@ -33,14 +33,13 @@ import {
         const data = snapshot.val();
         if (data) {
           setVitals({
-            pulseRate: data.pulseRate || 0,
-            bodyTemp: data.bodyTemp || data.bodyTemperature || 0,
-            
+            pulseRate: parseFloat((data.pulseRate || 0).toFixed(2)), 
+            bodyTemp: parseFloat((data.bodyTemp || data.bodyTemperature || 0).toFixed(2)),
           });
     
-          // Append new data to the history arrays
-          setPulseHistory((prev) => [...prev.slice(-9), data.pulseRate || 0]);
-        setTempHistory((prev) => [...prev.slice(-9), data.bodyTemp || 0]);
+          // Append new data to the history arrays, ensuring numbers
+          setPulseHistory((prev) => [...prev.slice(-9), parseFloat((data.pulseRate || 0).toFixed(2))]);
+          setTempHistory((prev) => [...prev.slice(-9), parseFloat((data.bodyTemp || 0).toFixed(2))]);
         }
       });
     
@@ -57,11 +56,14 @@ import {
       const newRecord = {
         name,
         age,
-        pulseRate: vitals.pulseRate,
-        bodyTemp: vitals.bodyTemp,
-        
+        pulseRate: Number(vitals.pulseRate), // Ensures it's a number
+        bodyTemp: Number(vitals.bodyTemp),   // Ensures it's a number
         timeRecorded: new Date().toISOString(),
       };
+      
+      
+      
+      
   
       push(ref(database, "records"), newRecord)
         .then(() => {
@@ -103,7 +105,7 @@ import {
             <View style={[styles.card, styles.pulseRateCard]}>
               <Ionicons name="heart" size={30} color="#ff4757" />
               <Text style={styles.cardTitle}>Pulse Rate</Text>
-              <Text style={styles.cardValue}>{vitals.pulseRate} BPM</Text>
+              <Text style={styles.cardValue}>{vitals.pulseRate.toFixed(2)} BPM</Text>
             </View>
   
             <View style={[styles.card, styles.pulseRateCard]}>
@@ -136,7 +138,7 @@ import {
             <View style={[styles.card, styles.bodyTempCard]}>
               <Ionicons name="thermometer" size={30} color="#ffa502" />
               <Text style={styles.cardTitle}>Body Temperature</Text>
-              <Text style={styles.cardValue}>{vitals.bodyTemp}°C</Text>
+              <Text style={styles.cardValue}>{vitals.bodyTemp.toFixed(2)}°C</Text>
             </View>
 
             <View style={[styles.card, styles.bodyTempCard]}>
